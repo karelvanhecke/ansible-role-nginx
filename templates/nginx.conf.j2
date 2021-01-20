@@ -1,0 +1,196 @@
+server {
+    server_name {{ item.server_name }};
+    listen {% if item.localhost is defined and item.localhost is sameas true %}127.0.0.1:{% endif %}{% if item.port is defined %}{{ item.port }}{% elif item.port is not defined and item.ssl is defined and item.ssl is sameas true %}443{% else %}80{% endif %}{% if item.ssl is defined and item.ssl is sameas true %} ssl http2{% endif %};
+    listen {% if item.localhost is defined and item.localhost is sameas true %}[::1]{% else %}[::]{% endif %}:{% if item.port is defined %}{{ item.port }}{% elif item.port is not defined and item.ssl is defined and item.ssl is sameas true %}443{% else %}80{% endif %}{% if item.ssl is defined and item.ssl is sameas true %} ssl http2{% endif %};
+
+{% if item.includes is defined %}
+{% for include in item.includes %}
+    include /etc/nginx/common/{{ include }}.conf;
+{% endfor %}
+{% endif %}
+{% if item.ssl_certificate is defined %}
+    ssl_certificate {{ cert_path }}/{{ item.ssl_certificate }};
+{% endif %}
+{% if item.ssl_certificate_key is defined %}
+    ssl_certificate_key {{ key_path }}/{{ item.ssl_certificate_key }};
+{% endif %}
+{% if item.sl_session_timeout is defined %}
+    ssl_session_timeout {{ item.ssl_session_timeout }};
+{% endif %}
+{% if item.ssl_session_cache is defined %}
+    ssl_session_cache {{ item.ssl_session_cache }};
+{% endif %}
+{% if item.ssl_session_tickets is defined and item.ssl_session_tickets is sameas false %}
+    ssl_session_tickets off;
+{% endif %}
+{% if item.ssl_protocols is defined %}
+    ssl_protocols {{ item.ssl_protocols }};
+{% endif %}
+{% if item.ssl_ciphers is defined %}
+    ssl_ciphers {{ item.ssl_ciphers }}; 
+{% endif %}
+{% if item.ssl_ecdh_curve is defined %}
+    ssl_ecdh_curve {{ item.ssl_ecdh_curve }};
+{% endif %}
+{% if item.ssl_prefer_server_ciphers is defined and item.ssl_prefer_server_ciphers is sameas true %}
+    ssl_prefer_server_ciphers on;
+{% endif %}
+{% if item.ssl_stapling is defined and item.ssl_stapling is sameas true %}
+    ssl_stapling on;
+{% endif %}
+{% if item.ssl_stapling_verify is defined and item.ssl_stapling_verify is sameas true %}
+    ssl_stapling_verify on;
+{% endif %}
+{% if item.ssl_verify_client is defined and item.ssl_verify_client is sameas true %}
+    ssl_verify_client on;
+{% endif %}
+{% if item.ssl_trusted_certificate is defined %}
+    ssl_trusted_certificate {{ cert_path }}/{{ item.ssl_trusted_certificate }};
+{% endif %}
+{% if item.ssl_client_certificate is defined %}
+    ssl_client_certificate {{ cert_path }}/{{ item.ssl_client_certificate }};
+{% endif %}
+{% if item.proxy_ssl_certificate is defined %}
+    proxy_ssl_certificate {{ cert_path }}/{{ item.proxy_ssl_certificate }};
+{% endif %}
+{% if item.proxy_ssl_certificate_key is defined %}
+    proxy_ssl_certificate_key {{ key_path }}/{{ item.proxy_ssl_certificate_key }};
+{% endif %}
+{% if item.proxy_ssl_trusted_certificate is defined %}
+    proxy_ssl_trusted_certificate {{ cert_path }}/{{ item.proxy_ssl_trusted_certificate }};
+{% endif %}
+{% if item.proxy_ssl_verify is defined and item.proxy_ssl_verify is sameas true %}
+    proxy_ssl_verify on;
+{% endif %}
+{% if item.proxy_ssl_verify_depth is defined %}
+    proxy_ssl_verify {{ item.proxy_ssl_verify_depth }};
+{% endif %}
+{% if item.headers is defined %}
+{% for header in item.headers %}
+    add_header {{ header.name }} "{{ header.value }}"{% if header.always is defined and header.always is sameas true %} always{% endif %};
+{% endfor %}
+{% endif %}
+{% if item.proxy_buffering is defined and item.proxy_buffering is sameas false %}
+    proxy_buffering off;
+{% endif %}
+{% if item.proxy_ssl_server_name is defined and item.proxy_ssl_server_name is sameas true %}
+    proxy_ssl_server_name on;
+{% endif %}
+{% if item.proxy_ssl_protocols is defined %}
+    proxy_ssl_protocols {{ item.proxy_ssl_protocols }};
+{% endif %}
+{% if item.proxy_http_version is defined %}
+    proxy_http_version {{ item.proxy_http_version }};
+{% endif %}
+{% if item.proxy_headers is defined %}
+{% for proxy_header in item.proxy_headers %}
+    proxy_set_header {{ proxy_header.name }} "{{ proxy_header.value }}";
+{% endfor %}
+{% endif %}
+{% if item.proxy_hide_headers is defined %}
+{% for proxy_hide_header in item.proxy_hide_headers %}
+    proxy_hide_header {{ proxy_hide_header }};
+{% endfor %}
+{% endif %}
+{% if item.acl is defined %}
+{% for ace in item.acl %}
+    {{ ace }};
+{% endfor %}
+{% endif %}
+{% if item.auth_request is defined %}
+    auth_request {{ item.auth_request }};
+{% endif %}
+{% if item.error_page is defined %}
+    error_page {{ item.error_page.code }} = {{ item.error_page.value }};
+{% endif %}
+{% if item.auth_request_sets is defined %}
+{% for auth_request_set in item.auth_request_sets %}
+    auth_request_set {{ auth_request_set.name }} "{{ auth_request_set.value }}";
+{% endfor %}
+{% endif %}
+{% if item.custom_block is defined %}
+    {{ item.custom_block }}
+{% endif %}
+{% for location in item.locations %}
+    location {{ location.path }} {
+{% if location.includes is defined %}
+{% for include in location.includes %}
+    include /etc/nginx/common/{{ include }}.conf;
+{% endfor %}
+{% endif %}
+{% if location.return is defined %}
+        return {{ location.return }}; 
+{% endif %}
+{% if location.backend is defined %}
+        proxy_pass {{ location.backend }};
+{% endif %}
+{% if location.proxy_ssl_certificate is defined %}
+        proxy_ssl_certificate {{ cert_path }}/{{ location.proxy_ssl_certificate }};
+{% endif %}
+{% if location.proxy_ssl_certificate_key is defined %}
+        proxy_ssl_certificate_key {{ key_path }}/{{ location.proxy_ssl_certificate_key }};
+{% endif %}
+{% if location.proxy_ssl_trusted_certificate is defined %}
+        proxy_ssl_trusted_certificate {{ cert_path }}/{{ location.proxy_ssl_trusted_certificate }};
+{% endif %}
+{% if location.proxy_ssl_verify is defined and location.proxy_ssl_verify is sameas true %}
+        proxy_ssl_verify on;
+{% endif %}
+{% if location.proxy_ssl_verify_depth is defined %}
+        proxy_ssl_verify_depth {{ location.proxy_ssl_verify_depth }};
+{% endif %}
+{% if not location.proxy_buffering is defined and location.proxy_buffering is sameas false %}
+        proxy_buffering off;
+{% endif %}
+{% if location.proxy_ssl_server_name is defined and location.proxy_ssl_server_name is sameas true %}
+        proxy_ssl_server_name on;
+{% endif %}
+{% if location.proxy_ssl_protocols is defined %}
+        proxy_ssl_protocols {{ location.proxy_ssl_protocols }};
+{% endif %}
+{% if location.proxy_http_version is defined %}
+        proxy_http_version {{ location.proxy_http_version }};
+{% endif %}
+{% if location.proxy_hide_headers is defined %}
+{% for proxy_hide_header in location.proxy_hide_headers %}
+        proxy_hide_header {{ proxy_hide_header }};
+{% endfor %}
+{% endif %}
+{% if location.proxy_headers is defined %}
+{% for proxy_header in location.proxy_headers %}
+        proxy_set_header {{ proxy_header.name }} "{{ proxy_header.value }}";
+{% endfor %}
+{% endif %}
+{% if location.proxy_pass_request_body is defined and location.proxy_pass_request_body is sameas false %}
+        proxy_pass_request_body off;
+{% endif %}
+{% if location.auth_request is defined %}
+        auth_request {{ location.auth_request }};
+{% endif %}
+{% if location.error_page is defined %}
+        error_page {{ location.error_page.code }} = {{ location.error_page.value }};
+{% endif %}
+{% if location.auth_request_sets is defined %}
+{% for auth_request_set in location.auth_request_sets %}
+        auth_request_set {{ auth_request_set.name }} "{{ auth_request_set.value }}";
+{% endfor %}
+{% endif %}
+{% if location.headers is defined %}
+{% for header in location.headers %}
+        add_header {{ header.name }} "{{ header.value }}"{% if header.always is defined and header.always is sameas true %} always{% endif %};
+{% endfor %}
+{% endif %}
+{% if location.custom_block is defined %}
+        {{ location.custom_block }}
+{% endif %}
+{% if location.proxy_buffer_size is defined %}
+        proxy_buffer_size {{ location.proxy_buffer_size }};
+{% endif %}
+{% if location.acl is defined %}
+{% for ace in location.acl %}
+        {{ ace }};
+{% endfor %}
+{% endif %}
+    }
+{% endfor %}
+}

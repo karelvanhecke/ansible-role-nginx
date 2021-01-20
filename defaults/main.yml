@@ -1,0 +1,7 @@
+cert_path: /etc/pki/tls/certs
+key_path: /etc/pki/tls/private
+
+nsupdate_key_name: key_nsupdate
+nsupdate_key_algo: hmac-sha384
+nameserver_port: 53
+record_ttl: 30

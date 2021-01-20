@@ -1,0 +1,74 @@
+- name: install nginx
+  yum:
+    name: nginx
+    state: latest
+  tags: nginx
+  notify: start nginx
+
+- name: set httpd_can_network_connect
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+
+- name: copy default nginx.conf
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+  tags: nginx
+  notify: 
+    - start nginx
+    - reload nginx
+
+- name: copy dependency.conf
+  copy:
+    src: dependency.conf
+    dest: /etc/systemd/system/nginx.service.d/dependency.conf
+  tags: nginx
+  notify: 
+    - daemon-reload
+    - start nginx
+
+- name: create common directory
+  file:
+    path: /etc/nginx/common
+    state: directory
+  tags: nginx
+
+- name: copy common configs
+  template: 
+    src: common.conf.j2
+    dest: "/etc/nginx/common/{{ item.name }}.conf"
+    mode: 0644
+  loop: "{{ common_configs }}"
+  when: common_configs is defined
+  tags: nginx
+  notify: 
+    - start nginx
+    - reload nginx
+
+- name: copy nginx server configs
+  template:
+    src: nginx.conf.j2
+    dest: "/etc/nginx/conf.d/{{ item.name }}.conf"
+  loop: "{{ serverblocks }}"
+  tags: nginx
+  notify: 
+    - start nginx
+    - reload nginx
+
+- name: add CNAME record for ingress domains
+  nsupdate:
+    key_name: "{{ nsupdate_key_name }}"
+    key_secret: "{{ nsupdate_key_secret }}"
+    key_algorithm: "{{ nsupdate_key_algo }}"
+    port: "{{ nameserver_port }}"
+    server: "{{ nameserver }}"
+    record: "{{ item }}."
+    value: "{{ ansible_host }}."
+    type: CNAME
+    ttl: "{{ record_ttl }}"
+  loop: "{{ ingress_domains }}"
+  when: ingress_domains is defined
+  delegate_to: localhost
+  tags: nginx
